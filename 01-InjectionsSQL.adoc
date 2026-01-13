@@ -1,0 +1,332 @@
+= Sécurisation des applications Web : Activité 1 - Injections
+:toc: left
+:toc-title: Sommaire
+:icons: font
+:source-highlighter: rouge
+:imagesdir: images
+
+== I. Objectifs à atteindre
+
+* Comprendre la notion d'injection.
+* Réaliser les deux défis présentés.
+* Comprendre le code source des scripts PHP utilisés (version non sécurisée et version sécurisée).
+
+== II. Présentation de la notion d'injection
+
+=== 1. Définition de la notion d'injection
+
+Les défauts d'injection, tels que l'injection SQL ou l'injection LDAP, se produisent lorsque des données non attendues sont envoyées à un interpréteur en tant que commande ou requête.
+
+Ces données envoyées par l'attaquant peuvent entraîner l'exécution de commandes et ainsi permettre l'accès à des informations confidentielles. L'injection la plus connue reste l'injection SQL (SQLi).
+
+De nombreuses applications web travaillent autour d'un système de gestion de base de données (SGBDR) et comportent des formulaires qui attendent des données fournies par les utilisateurs. Si le développeur ne travaille que sur les scénarios attendus de saisies des données, il risque de ne pas intégrer de **contrôles de validation** (input validation) ce qui peut entraîner une sensibilité à l'injection.
+
+De nombreux outils permettent d'automatiser la détection et l'exploitation des vulnérabilités SQLi. On peut citer :
+
+* Burpsuite
+* Vega
+* SQLMAP
+* SQL ninja
+* Arachni
+* Script Engine de NMAP…
+
+=== 2. Exemple d'injection SQL (SQLi)
+
+De nombreux exemples d'injections SQL sont disponibles sur Internet. Prenons un exemple simple qui illustre le fonctionnement d'une requête SQL visant à compromettre le mot de passe d'un utilisateur.
+
+On considère le champ associé au *login* et le champ associé au *mot de passe*. On suppose que l'attaquant connaît le login de la victime (via ingénierie sociale par exemple).
+
+La saisie suivante peut être mise en place si le site est sensible aux injections SQL :
+
+* **Utilisateur** : `admin`
+* **Mot de passe** : ++' or 1=1 -- ++
+
+L'apostrophe indique la fin de la zone de frappe de l'utilisateur, le code `or 1` demande au script si 1 est vrai (ce qui est toujours le cas), et les doubles tirets indiquent le début d'un commentaire en SQL.
+
+En SQL standard (et MySQL), le double tiret doit obligatoirement être suivi d'une espace pour être interprété comme un commentaire. Sans l'espace, l'injection risque d'échouer selon la version de la BDD.
+
+La requête SQL générée pourrait ressembler à ceci :
+
+[source,sql]
+----
+SELECT uid FROM Users WHERE Name = 'admin' AND Password = ' ' OR 1 -- ;
+----
+
+Le script devient ainsi programmé pour vérifier si ce que l'utilisateur saisit est vrai. Comme 1 est vrai, l'attaquant sera connecté en tant qu'administrateur.
+
+== III. Présentation des défis
+
+Deux défis sont à relever dans cette première activité.
+
+* **Défi 1 : Extraction de données** +
+Le but est d'obtenir la liste de tous les utilisateurs.
+
+* **Défi 2 : Passer outre une authentification** +
+Le but est de s'authentifier à l'aide du compte d'un autre utilisateur.
+
+== IV. Travaux préparatoires
+
+Il faut commencer par créer un compte sur Mutillidae. Pour cela, cliquer sur le lien *Login/register*.
+
+image::mutillidae-menu-login.png[Menu Login Register]
+
+Puis suivre le lien "Please register here".
+
+Une fois authentifié, une indication apparaît en haut à droite de l'écran. Cette indication permettra de vérifier si certains défis sont réalisés avec succès.
+
+image::mutillidae-logged-in-status.png[Statut connecté Patrice]
+
+
+Le niveau de sécurité du code mis en place est indiqué en haut de la page près des informations d'authentification.
+
+image::security-level-1.png[Security Level 0 Hosed]
+_Absence de contrôle de sécurité._
+
+image::security-level-1.png[Security Level 1 Client side]
+_Contrôles des informations saisies coté client._
+
+image::security-level-5.png[Security Level 5 Server side]
+_Contrôles des informations saisies coté serveur._
+
+Le niveau de sécurité du code mis en œuvre se modifie en cliquant sur le lien **Toggle Security**.
+
+image::btn-toggle-security.png[Bouton Toggle Security]
+
+Chaque niveau de sécurité est disponible sur le même script PHP. Ces scripts sont stockés sur le serveur dans le répertoire d’installation (ex: `c:\laragon\www\mutillidae` sous Windows).
+
+Pour les deux défis de cette activité, c'est le formulaire d'authentification qui servira de base de travail.
+
+image::formulaire-login.png[Formulaire de connexion]
+
+Certains défis nécessitent de connaître les noms des champs de formulaires utilisés. Cette information peut s'obtenir facilement en observant le code source de la page (CTRL + U).
+
+[source,html]
+----
+<td class="label">Username</td>
+<td>
+<input SQLInjectionPoint="1" type="text" name="username" size="20" autofocus="autofocus" minlength="1" maxlength="15" required="required" />
+----
+
+[TIP]
+.Bonne pratique Git
+====
+Avant de commencer à travailler, créez un fichier `.gitignore` à la racine de votre projet pour exclure les fichiers inutiles (fichiers de configuration de l'IDE `.idea/`, `.vscode/`, fichiers temporaires, etc.).
+====
+
+[NOTE]
+====
+Cette activité peut être réalisée sans utiliser l’outil **BurpSuite**. Toutefois, une première prise en main est recommandée pour trouver le nom des champs du formulaire.
+====
+
+**Première prise en main de l’outil BurpSuite :**
+
+BurpSuite peut être utilisé pour découvrir le nom des champs d’un formulaire.
+
+1.  Configurer le proxy du navigateur (voir annexes) sur `127.0.0.1:8080`.
+2.  Démarrer BurpSuite (`Temporary project` => `Use Burp defaults`).
+3.  Aller dans l’onglet **Proxy** > **Intercept**, vérifier que le proxy est désactivé (*Intercept is off*).
+4.  Aller sur la page *Login/Register* de Mutillidae.
++
+image::form-login.png[Login/Register]
++
+5.  Saisir un login et un mot de passe sans valider.
+6.  Dans BurpSuite, activer l'interception (*Intercept is on*).
+7.  Valider le formulaire sur le navigateur.
+8.  Dans BurpSuite, cliquer sur **Forward**. Le nom des champs est visible dans l'onglet **Inspector > Request body parameters**.
+
+image::burp-request-interception.png[Interception requête BurpSuite]
+
+**Consignes pour la suite :**
+
+1.  Créer un compte permettant de vous authentifier sur la plateforme.
+2.  Découvrir les noms des champs `login` et `mot de passe` du formulaire.
+3.  Positionner le niveau de sécurité du code à **0 (Hosed)**.
+
+== V. Découverte de la sensibilité SQLi
+
+Une fois les travaux préparatoires effectués, passons à la phase de découverte. La plateforme Mutillidae offre des pages sensibles à la faille SQLi (selon le niveau de sécurité).
+
+1.  Aller sur la page de connexion.
+2.  Vérifier que le niveau de sécurité est **0 (Hosed)**.
+3.  Saisir une simple quote `'` dans le champ mot de passe.
+
+image::input-sqli-quote.png[Insertion quote champ mot de passe]
+
+_Note : L'outil "Web developer" a été utilisé ici pour rendre le mot de passe visible, ce n'est pas indispensable._
+
+Lors du clic sur le bouton **Login**, une erreur apparaît dévoilant la sensibilité SQLi.
+
+image::sqli-error-message.png[Message erreur SQL Injection]
+
+Ce message d'erreur est particulièrement instructif pour une personne malveillante.
+
+== VI. A vous de jouer
+
+Le but est de relever les deux défis présentés précédemment. Une recherche sur Internet permet d'obtenir de nombreux exemples d'injections à tester.
+
+=== Premier défi : Extraction de données
+
+**Objectif :** Obtenir la liste de tous les utilisateurs.
+
+Pour lancer le défi, suivre le chemin : `OWASP 2017 => A1 – Injection (SQL) => SQLi – Extract Data => User Info (SQL)`.
+
+image::menu-user-info-sqli.png[Menu User Info SQLi]
+
+* Nom du script PHP : `user-info.php`.
+* Fonction : Affiche le détail des informations d'un compte utilisateur.
+
+image::form-user-info.png[Formulaire User Info]
+
+=== Deuxième défi : Passer outre une authentification
+
+**Objectif :** S'authentifier à l'aide du compte d'un autre utilisateur.
+
+Pour lancer le défi, suivre le chemin : `OWASP 2017 => A1 – Injection (SQL) => SQLi – Bypass Authentication => Login`.
+
+image::menu-bypass-auth.png[Menu Bypass Authentication]
+
+* Nom du script PHP : `login.php`.
+
+=== Réalisation des défis
+
+Tester les injections suivantes pour réaliser les défis :
+
+* `'or ('a' = 'a' ) or '`
+* `' or username='admin`
+
+Reporter sur votre documentation les injections testées et les résultats.
+
+== VII. Contre-mesures
+
+La contre-mesure passe par la mise en place d'un codage sécurisé.
+
+1.  Modifier le niveau de sécurité (passer à 1 ou 5).
+2.  Vérifier que les tests d'exploitation des failles SQLi échouent.
+3.  En examinant le fichier `user-info.php` (avec PHPStorm ou VSCode), répondre aux questions suivantes :
+* Quel niveau de sécurité est nécessaire pour protéger contre cette attaque ?
+* A ce niveau, quels sont les contrôles réalisés ?
+* Est-ce que le contrôle HTML aurait suffi à protéger contre cette injection SQL ?
+* Comment la validation Javascript est-elle déclenchée ?
+* Quels sont les contrôles réalisés par la validation Javascript ?
+
+[appendix]
+== ANNEXES : MISE EN PLACE
+
+=== A. Installation de Mutillidae
+
+==== Pré-requis pour Windows (Laragon)
+1.  Copier le répertoire fourni mutillidae dans un sous répertoire de Laragon (ex: `c:\laragon\www\mutillidae`).
+2.  Changer éventuellement le Document Root sur Laragon.
+
+==== Pré-requis pour Linux
+Installation sur Debian 12 ou similaire via VirtualBox.
+
+Installer les paquets nécessaires :
+[source,bash]
+----
+apt install php7.0-xml libapache2-mod-php php-mysql mysql-server apache2 apache2-utils php-xml php-gd php-imap php-gettext php-curl zip
+----
+
+Configuration de la base de données :
+[source,bash]
+----
+mysql
+----
+
+Dans la console MySQL/MariaDB :
+[source,sql]
+----
+CREATE USER 'mutillidae'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON *.* to 'mutillidae'@'localhost';
+FLUSH PRIVILEGES;
+----
+
+==== Téléchargement et installation
+Télécharger la dernière version :
+[source,bash]
+----
+wget https://sourceforge.net/projects/mutillidae/files/mutillidae-project/LATEST-mutillidae-2.6.62.zip
+----
+
+Décompresser dans le dossier web (`/var/www/html/` généralement).
+
+==== Initialisation
+Accéder à l'URL : `http://localhost/mutillidae`.
+
+* Sur Linux, si page blanche : `service apache2 restart`.
+* Sur Windows : démarrer Laragon.
+
+Si le message "Database offline" apparaît :
+
+image::db-offline-warning.png[Erreur Database Offline]
+
+Cliquer sur le lien **setup/reset the DB**.
+
+image::mutillidae-homepage.png[Page accueil Mutillidae]
+
+=== B. Préparation de BurpSuite
+
+==== Présentation
+BurpSuite (PortSwigger) est une plateforme de test de sécurité web jouant le rôle de proxy entre le navigateur et le serveur. Il permet d'intercepter, analyser et modifier les requêtes.
+
+image::schema-proxy-burp.png[Schéma fonctionnement Proxy]
+
+==== Installation
+
+**Sur Windows :** Exécuter l'installeur `burpsuite_community_windows-x64_vXXXX.exe`.
+
+**Sur Linux :**
+Télécharger la version Community (script `.sh`) depuis le site PortSwigger.
+Rendre le script exécutable et l'installer :
+
+[source,bash]
+----
+chmod +x burpsuite_community_linux_v1_7_32.sh
+sh burpsuite_community_linux_v1_7_32.sh
+----
+
+image::install-burp-linux.png[Installation Burp Linux]
+
+==== Configuration du navigateur
+
+Le navigateur doit être configuré pour utiliser le proxy local.
+
+**Paramètres Proxy :**
+* IP : `127.0.0.1`
+* Port : `8080`
+
+*Exemple sous Windows :*
+
+image::windows-proxy-settings.png[Config Proxy Windows]
+
+*Exemple sous Firefox :*
+(Menu Paramètres > Réseau > Paramètres)
+
+image::firefox-proxy-settings.png[Config Proxy Firefox]
+
+image::firefox-proxy-settings2.png[Config Proxy Firefox]
+
+
+==== Première capture
+
+1.  Lancer BurpSuite > **Temporary Project** > **Use Burp defaults**.
+2.  Onglet **Proxy** > **Intercept**.
+3.  Vérifier que le bouton indique **Intercept is on**.
+4.  Naviguer sur le web : la requête s'affiche dans Burp.
+5.  Cliquer sur **Forward** pour relâcher la requête.
+
+image::burp-interface-intercept.png[Interface Burp Intercept]
+
+Il faut ensuite cliquer sur temporary project.,
+
+Puis un autre clic sur suivant et enfin sur burp defaults.
+
+Enfin, il faut cliquer sur le bouton Start Burp.
+
+Sous Linux, le répertoire d'installation de BurpSuite se situe par défaut dans /usr/local/BurpSuiteCommunity. Pour effectuer une première interception de requête, il faut cliquer sur l'onglet Proxy, puis sur Intercept et vérifier la présence du bouton intercept is on.
+
+Lors de l'accès à un site depuis le navigateur, chaque requête est capturée par BurpSuite. Le clic sur le bouton Forward permet de passer à la requête suivante. En attendant ce clic, le proxy se met en attente avant d'envoyer les données vers le serveur web.
+
+Pour désactiver la capture, il suffit de cliquer sur ‘intercept is on’.
+
+image::intercept-on.png[Désactivation]
