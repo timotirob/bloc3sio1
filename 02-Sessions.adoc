@@ -288,6 +288,9 @@ Faire un clic droit dans la fenêtre de la réponse (fenêtre de droite et cliqu
 .Ajout au Comparer
 image::02-WSDL4.png[Comparer : item 1 chargé]
 
+
+Mettre le proxy à Off.
+
 **Étape 2 : Test Login Existant**
 
 * Créer un compte `utilisateur1` via le lien "Please register here".
@@ -357,15 +360,18 @@ fred
 .Chargement du Payload
 image::02-Step3-4.png[Intruder : Chargement de la liste]
 
-* Onglet **Options** (Grep - Extract) : Ajouter un filtre.
+
+Le Copy / Paste marche très bien aussi ....
+
+* Onglet **Settings** (Grep - Extract) : Ajouter un filtre.
 
 .Ajout d'un filtre Grep - Extract
 image::02-Step3-5.png[Options : Bouton Add Grep Extract]
 
-* Définir l'expression à extraire : "Results for".
+* Définir l'expression à extraire : "<account>>".
 
 .Définition de l'expression
-image::02-Step3-6.png[Filtre : Start after expression 'Results for']
+image::02-Step3-6.png[Filtre : Start after expression '<account>']
 
 * **Start Attack**. Les résultats s'affichent.
 
@@ -570,11 +576,19 @@ Un rapport détaillé est attendu !
 
 **Outil en ligne de commande - Curl**
 
-. Vous pouvez dézipper le programme fourni `curl-8.11.1_3-win64-mingw.zip` dans le répertoire `c:\Programmes`.
+. Vous pouvez dézipper le programme fourni `curl-8.18.0.zip` dans le répertoire `c:\Program Files`.
++
+Pour se faire:
+
+* copier le fichier Zip dans ce répertoire
+* ouvrir une commande PowerShell en administrateur
+* cd "c:\Program Files"
+* tar -xf curl-8.18.0.zip
++
 . Ensuite vous pouvez ajouter le répertoire `bin` à la variable d’environnement `PATH`.
 +
 Exemple de chemin à ajouter :
-`C:\Program Files\curl-8.4.0_6-win64-mingw\bin`
+`C:\Program Files\curl-8.18.0\bin`
 
 .Configuration de la variable PATH sous Windows
 image::02-challenge-1.png[Fenêtre Variables d'environnement : Ajout du chemin Curl]
