@@ -1,4 +1,4 @@
-e= Sécurisation des applications Web : Séance 2
+= Sécurisation des applications Web : Séance 2
 :authorinitials: Patrice Dignan & OWASP Mutillidae
 :author: Timothée Robert (portage ADOC et compléments)
 :toc: left
