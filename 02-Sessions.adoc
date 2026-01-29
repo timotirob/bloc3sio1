@@ -1,4 +1,4 @@
-= Sécurisation des applications Web : Séance 2
+e= Sécurisation des applications Web : Séance 2
 :authorinitials: Patrice Dignan & OWASP Mutillidae
 :author: Timothée Robert (portage ADOC et compléments)
 :toc: left
@@ -575,20 +575,15 @@ Un rapport détaillé est attendu !
 === Annexes : Installation de Curl
 
 **Outil en ligne de commande - Curl**
-
-. Vous pouvez dézipper le programme fourni `curl-8.18.0.zip` dans le répertoire `c:\Program Files`.
+- Copier le répertoire curl dans le répertoire `c:\Program Files` (Programmes
 +
 Pour se faire:
 
-* copier le fichier Zip dans ce répertoire
-* ouvrir une commande PowerShell en administrateur
-* cd "c:\Program Files"
-* tar -xf curl-8.18.0.zip
 +
 . Ensuite vous pouvez ajouter le répertoire `bin` à la variable d’environnement `PATH`.
 +
 Exemple de chemin à ajouter :
-`C:\Program Files\curl-8.18.0\bin`
+`C:\Program Files\curl\bin`
 
 .Configuration de la variable PATH sous Windows
 image::02-challenge-1.png[Fenêtre Variables d'environnement : Ajout du chemin Curl]
